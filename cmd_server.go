@@ -80,15 +80,16 @@ metalcloud-cli server list --show-credentials # to retrieve a list of credential
 		Subject:      "server",
 		AltSubject:   "srv",
 		Predicate:    "register",
-		AltPredicate: "new",
+		AltPredicate: "reg",
 		FlagSet:      flag.NewFlagSet("register server", flag.ExitOnError),
 		InitFunc: func(c *Command) {
 			c.Arguments = map[string]interface{}{
 				"datacenter":    c.FlagSet.String("datacenter", _nilDefaultStr, red("(Required)")+" The datacenter in which this server is to be registered."),
-				"server_vendor": c.FlagSet.String("server-vendor", _nilDefaultStr, red("(Required)")+" Server vendor (driver) to use when interacting with the server. One of: `dell`,'hpe_legacy','hpe'."),
+				"server_vendor": c.FlagSet.String("server-vendor", _nilDefaultStr, red("(Required)")+" Server vendor (driver) to use when interacting with the server. One of: 'HPE', 'HP', 'Dell Inc.', 'Supermicro', 'BULL'."),
 				"mgmt_address":  c.FlagSet.String("mgmt-address", _nilDefaultStr, red("(Required)")+" IP or DNS record for the server's management interface (BMC)."),
 				"mgmt_user":     c.FlagSet.String("mgmt-user", _nilDefaultStr, red("(Required)")+" Server' BMC username."),
 				"mgmt_pass":     c.FlagSet.String("mgmt-pass", _nilDefaultStr, red("(Required)")+" Server' BMC password."),
+				"device_type":   c.FlagSet.String("device-type", "server", "It can be a 'server' or 'cartridge'."),
 				"return_id":     c.FlagSet.Bool("return-id", false, "Will print the ID of the created object. Useful for automating tasks."),
 			}
 		},
@@ -1229,16 +1230,17 @@ func serverRegisterCmd(c *Command, client metalcloud.MetalCloudClient) (string, 
 	if !ok {
 		return "", fmt.Errorf("-mgmt_pass is required")
 	}
+	device_type := getStringParam(c.Arguments["device_type"])
 
 	obj := metalcloud.ServerCreateAndRegister{
-		DatacenterName:           datacenter,
-		ServerVendor:             server_vendor,
-		ServerManagementAddress:  mgmt_address,
-		ServerManagementUser:     mgmt_user,
+		DatacenterName: datacenter,
+		ServerVendor: server_vendor,         
+		ServerManagementAddress: mgmt_address,
+		ServerManagementUser: mgmt_user,   
 		ServerManagementPassword: mgmt_pass,
 	}
 
-	ret, err := client.ServerCreateAndRegister(obj)
+	ret, err := client.ServerCreateAndRegister(obj, device_type)
 	if err != nil {
 		return "", err
 	}
