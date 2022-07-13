@@ -422,10 +422,11 @@ func TestServerRegisterCmd(t *testing.T) {
 			name: "good",
 			cmd: MakeCommand(map[string]interface{}{
 				"datacenter": "name",
-				"server_vendor":   "vendor",
+				"server_vendor": "vendor",
 				"mgmt_address": "127.0.0.1",
 				"mgmt_user": "user",
 				"mgmt_pass": "pass",
+				"device_type": "server",
 				"return_id": true,
 			}),
 			good: true,
