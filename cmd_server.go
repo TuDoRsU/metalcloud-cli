@@ -1233,10 +1233,10 @@ func serverRegisterCmd(c *Command, client metalcloud.MetalCloudClient) (string, 
 	device_type := getStringParam(c.Arguments["device_type"])
 
 	obj := metalcloud.ServerCreateAndRegister{
-		DatacenterName: datacenter,
-		ServerVendor: server_vendor,         
-		ServerManagementAddress: mgmt_address,
-		ServerManagementUser: mgmt_user,   
+		DatacenterName:           datacenter,
+		ServerVendor:             server_vendor,
+		ServerManagementAddress:  mgmt_address,
+		ServerManagementUser:     mgmt_user,
 		ServerManagementPassword: mgmt_pass,
 	}
 
