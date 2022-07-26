@@ -84,13 +84,15 @@ metalcloud-cli server list --show-credentials # to retrieve a list of credential
 		FlagSet:      flag.NewFlagSet("register server", flag.ExitOnError),
 		InitFunc: func(c *Command) {
 			c.Arguments = map[string]interface{}{
-				"datacenter":    c.FlagSet.String("datacenter", _nilDefaultStr, red("(Required)")+" The datacenter in which this server is to be registered."),
-				"server_vendor": c.FlagSet.String("server-vendor", _nilDefaultStr, red("(Required)")+" Server vendor (driver) to use when interacting with the server. One of: 'HPE', 'HP', 'Dell Inc.', 'Supermicro', 'BULL'."),
-				"mgmt_address":  c.FlagSet.String("mgmt-address", _nilDefaultStr, red("(Required)")+" IP or DNS record for the server's management interface (BMC)."),
-				"mgmt_user":     c.FlagSet.String("mgmt-user", _nilDefaultStr, red("(Required)")+" Server' BMC username."),
-				"mgmt_pass":     c.FlagSet.String("mgmt-pass", _nilDefaultStr, red("(Required)")+" Server' BMC password."),
-				"device_type":   c.FlagSet.String("device-type", "server", "It can be a 'server' or 'cartridge'."),
-				"return_id":     c.FlagSet.Bool("return-id", false, "Will print the ID of the created object. Useful for automating tasks."),
+				"device_type":          c.FlagSet.String("device-type", "server", "It can be a 'server' or 'cartridge'."),
+				"datacenter":           c.FlagSet.String("datacenter", _nilDefaultStr, red("(Required)")+" The datacenter in which this server is to be registered."),
+				"server_vendor":        c.FlagSet.String("server-vendor", _nilDefaultStr, red("(Required)")+"Server vendor (driver) to use when interacting with the server. One of: 'HPE', 'HP', 'Dell Inc.', 'Supermicro', 'BULL'."),
+				"mgmt_address":         c.FlagSet.String("mgmt-address", _nilDefaultStr, "IP or DNS record for the server's management interface (BMC)."),
+				"mgmt_user":            c.FlagSet.String("mgmt-user", _nilDefaultStr, "Server' BMC username."),
+				"mgmt_pass":            c.FlagSet.String("mgmt-pass", _nilDefaultStr, "Server' BMC password."),
+				"chassis_rack_id":      c.FlagSet.Int("chassis-rack-id", _nilDefaultInt, "Cartridge' chassis rack id."),
+				"server_serial_number": c.FlagSet.String("server-serial-number", _nilDefaultStr, "Server' serial number."),
+				"return_id":            c.FlagSet.Bool("return-id", false, "Will print the ID of the created object. Useful for automating tasks."),
 			}
 		},
 		ExecuteFunc: serverRegisterCmd,
@@ -1218,26 +1220,52 @@ func serverRegisterCmd(c *Command, client metalcloud.MetalCloudClient) (string, 
 	if !ok {
 		return "", fmt.Errorf("-server_vendor is required")
 	}
-	mgmt_address, ok := getStringParamOk(c.Arguments["mgmt_address"])
+	device_type, ok := getStringParamOk(c.Arguments["device_type"])
 	if !ok {
-		return "", fmt.Errorf("-mgmt_address is required")
+		return "", fmt.Errorf("-device_type is required")
 	}
-	mgmt_user, ok := getStringParamOk(c.Arguments["mgmt_user"])
-	if !ok {
-		return "", fmt.Errorf("-mgmt_user is required")
-	}
-	mgmt_pass, ok := getStringParamOk(c.Arguments["mgmt_pass"])
-	if !ok {
-		return "", fmt.Errorf("-mgmt_pass is required")
-	}
-	device_type := getStringParam(c.Arguments["device_type"])
 
-	obj := metalcloud.ServerCreateAndRegister{
-		DatacenterName:           datacenter,
-		ServerVendor:             server_vendor,
-		ServerManagementAddress:  mgmt_address,
-		ServerManagementUser:     mgmt_user,
-		ServerManagementPassword: mgmt_pass,
+	var obj metalcloud.ServerCreateAndRegister
+
+	if device_type == "server" {
+		mgmt_address, ok := getStringParamOk(c.Arguments["mgmt_address"])
+		if !ok {
+			return "", fmt.Errorf("-mgmt_address is required")
+		}
+		mgmt_user, ok := getStringParamOk(c.Arguments["mgmt_user"])
+		if !ok {
+			return "", fmt.Errorf("-mgmt_user is required")
+		}
+		mgmt_pass, ok := getStringParamOk(c.Arguments["mgmt_pass"])
+		if !ok {
+			return "", fmt.Errorf("-mgmt_pass is required")
+		}
+
+		obj = metalcloud.ServerCreateAndRegister{
+			DatacenterName:           datacenter,
+			ServerVendor:             server_vendor,
+			ServerManagementAddress:  mgmt_address,
+			ServerManagementUser:     mgmt_user,
+			ServerManagementPassword: mgmt_pass,
+		}
+	} else if device_type == "cartridge" {
+		chassis_rack_id, ok := getIntParamOk(c.Arguments["chassis_rack_id"])
+		if !ok {
+			return "", fmt.Errorf("-chassis_rack_id is required")
+		}
+		server_serial_number, ok := getStringParamOk(c.Arguments["server_serial_number"])
+		if !ok {
+			return "", fmt.Errorf("-server_serial_number is required")
+		}
+
+		obj = metalcloud.ServerCreateAndRegister{
+			DatacenterName:     datacenter,
+			ServerVendor:       server_vendor,
+			ChassisRackID:      chassis_rack_id,
+			ServerSerialNumber: server_serial_number,
+		}
+	} else {
+		return "", fmt.Errorf("-device_type can be a 'server' or 'cartridge'.")
 	}
 
 	ret, err := client.ServerCreateAndRegister(obj, device_type)
